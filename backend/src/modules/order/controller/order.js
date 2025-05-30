@@ -2,13 +2,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { sendApprovedEmail, sendFailedEmail } from '../../../utils/sendEmail'
 
 const simulateTransaction = (cvv) => {
-  // Per requirements:
-  // Enter 1 → Approved
-  // Enter 2 → Declined
-  // Enter 3 → Gateway Failure
-  // Any CVV 3-digit number, Expiry date future
-  console.log('Simulating transaction with CVV:', cvv);
-
   if (cvv === '123') return 'approved'
   if (cvv === '212') return 'declined'
   if (cvv === '312') return 'gateway_error'
@@ -19,7 +12,7 @@ export const createOrder = async (req, res) => {
   try {
     const {
       context: {
-        models: { Product, Order },
+        models: { Product, Order, CartItem },
       },
       body: {
         name,
@@ -32,13 +25,11 @@ export const createOrder = async (req, res) => {
         cardNumber,
         expiryDate,
         cvv,
-        productId,
-        variant,
-        quantity,
-        imageUrl
+        cart,
       },
     } = req
-    console.log('Creating order with data:', req.body)
+
+    console.log('Creating order with cart:', cart)
 
     if (
       !name ||
@@ -51,36 +42,55 @@ export const createOrder = async (req, res) => {
       !cardNumber ||
       !expiryDate ||
       !cvv ||
-      !productId ||
-      !variant ||
-      !quantity ||
-      !imageUrl
+      !Array.isArray(cart) ||
+      cart.length === 0
     ) {
-      return res.status(400).json({ error: 'All fields are required.' })
+      return res
+        .status(400)
+        .json({ error: 'All fields and non-empty cart are required.' })
     }
 
-    const product = await Product.findByPk(productId)
+    let subtotal = 0
+    const orderItems = []
 
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' })
-    }
+    for (const item of cart) {
+      const { productId, quantity, variant, imageUrl } = item
 
-    if (product?.inventoryCount < quantity) {
-      return res.status(400).json({ error: 'Insufficient inventory.' })
+      if (!productId || !quantity || !variant || !imageUrl) {
+        return res.status(400).json({
+          error:
+            'Each cart item must include productId, variant, quantity, and imageUrl.',
+        })
+      }
+
+      const product = await Product.findByPk(productId)
+      if (!product) {
+        return res.status(404).json({ error: `Product not found` })
+      }
+
+      if (product.inventoryCount < quantity) {
+        return res
+          .status(400)
+          .json({ error: `Insufficient inventory for ${product.title}` })
+      }
+
+      subtotal += product.price * quantity
+
+      orderItems.push({
+        productId,
+        variantSelected: variant,
+        imageSelected: imageUrl,
+        quantity,
+        price: product.price,
+      })
     }
 
     const transactionStatus = simulateTransaction(cvv)
-    console.log(`Transaction status: ${transactionStatus}`)
-
-    const subtotal = product?.price * quantity
     const total = subtotal
-
-    const orderNo = uuidv4()
-    console.log(`Order number generated: ${orderNo}`)
+    const orderNumber = uuidv4()
 
     const order = await Order.create({
-      orderNumber: uuidv4(),
-      productId: product?.id,
+      orderNumber,
       name,
       email,
       phoneNumber,
@@ -91,43 +101,47 @@ export const createOrder = async (req, res) => {
       cardNumber,
       expiryDate,
       cvv,
-      variantSelected: variant,
-      imageSelected: imageUrl,
-      quantity,
       subtotal,
       total,
       transactionStatus,
     })
 
-    if (transactionStatus === 'approved') {
-      product.inventoryCount -= quantity
+    for (const item of orderItems) {
+      await CartItem.create({
+        ...item,
+        orderId: order.id,
+      })
+
+      const product = await Product.findByPk(item.productId)
+      product.inventoryCount -= item.quantity
       await product.save()
-      await sendApprovedEmail(order)
-    } else {
-      await sendFailedEmail(order)
     }
 
-    // const emailTemplate =
-    //   status === 'approved'
-    //     ? `<h1>Order Confirmed</h1><p>Order #${order.orderNumber}</p>`
-    //     : `<h1>Order Failed</h1><p>Transaction ${status.toUpperCase()}</p>`
+    const fullOrder = await Order.findByPk(order.id, {
+      include: [
+        {
+          model: CartItem,
+          as: 'cartItems',
+          include: [{ model: Product, as: 'product' }],
+        },
+      ],
+    })
 
-    // await sendEmail({
-    //   to: email,
-    //   subject: `Order ${status}`,
-    //   html: emailTemplate,
-    // })
+    if (transactionStatus === 'approved') {
+      await sendApprovedEmail(fullOrder)
+    } else {
+      await sendFailedEmail(fullOrder)
+    }
 
-    // res.status(200).json({ orderId: order.id, status })
     res.status(201).json({
       message: `Order ${transactionStatus}`,
-      order,
+      fullOrder,
     })
   } catch (error) {
-    console.error('Error while create order:', error)
+    console.error('Error while creating order:', error)
     res
       .status(500)
-      .json({ error: 'Error while create order', details: error.message })
+      .json({ error: 'Internal Server Error', details: error.message })
   }
 }
 
@@ -135,14 +149,21 @@ export const getOrderByOrderNumber = async (req, res) => {
   try {
     const {
       context: {
-        models: { Order, Product },
+        models: { Order, Product, CartItem },
       },
       params: { orderNumber },
     } = req
 
     const order = await Order.findOne({
       where: { orderNumber },
-      include: [{ model: Product, as: 'product' }],
+      include: [
+        { model: Product, as: 'product' },
+        {
+          model: CartItem,
+          as: 'cartItems',
+          include: [{ model: Product, as: 'product' }],
+        },
+      ],
     })
 
     if (!order) {

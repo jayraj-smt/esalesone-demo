@@ -13,11 +13,6 @@ export default class Product extends Model {
         price: {
           type: DataTypes.FLOAT,
         },
-        // variants: {
-        //   type: DataTypes.JSONB,
-        
-        //   defaultValue: [],
-        // },
         inventoryCount: {
           type: DataTypes.INTEGER,
         },

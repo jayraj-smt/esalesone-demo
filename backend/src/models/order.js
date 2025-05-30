@@ -38,12 +38,6 @@ export default class Order extends Model {
         cvv: {
           type: DataTypes.STRING,
         },
-        variantSelected: {
-          type: DataTypes.STRING,
-        },
-        quantity: {
-          type: DataTypes.INTEGER,
-        },
         subtotal: {
           type: DataTypes.DECIMAL(10, 2),
           allowNull: false,
@@ -54,13 +48,6 @@ export default class Order extends Model {
         },
         transactionStatus: {
           type: DataTypes.ENUM('approved', 'declined', 'gateway_error'),
-          allowNull: false,
-        },
-        imageSelected: {
-          type: DataTypes.STRING,
-        },
-        productId: {
-          type: DataTypes.INTEGER,
           allowNull: false,
         },
       },
@@ -77,6 +64,11 @@ export default class Order extends Model {
       as: 'product',
       foreignKey: 'productId',
       targetKey: 'id',
+    })
+
+    Order.hasMany(models.CartItem, {
+      as: 'cartItems',
+      foreignKey: 'orderId',
     })
   }
 }

@@ -1,9 +1,9 @@
 import Sequelize from 'sequelize'
 import config from '../../config/config'
-// import User from './user'
 import Product from './product'
 import Order from './order'
 import ProductImage from './productImage'
+import CartItem from './cartItem'
 
 const sequelize = new Sequelize(
   config.development.database,
@@ -21,20 +21,20 @@ const sequelize = new Sequelize(
     //   acquire: 30000,
     //   idle: 10000,
     // },
-    // dialectOptions: {
-    //   ssl: {
-    //     require: true,
-    //     rejectUnauthorized: false,
-    //   },
-    // },
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
   }
 )
 
 const models = {
-  // User: User.init(sequelize, Sequelize),
   Product: Product.init(sequelize, Sequelize),
   Order: Order.init(sequelize, Sequelize),
   ProductImage: ProductImage.init(sequelize, Sequelize),
+  CartItem: CartItem.init(sequelize, Sequelize),
 }
 
 try {

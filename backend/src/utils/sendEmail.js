@@ -1,25 +1,3 @@
-// import nodemailer from 'nodemailer'
-// import dotenv from 'dotenv'
-
-// dotenv.config()
-
-// const transporter = nodemailer.createTransport({
-//   host: 'smtp.mailtrap.io',
-//   port: 587,
-//   auth: {
-//     user: process.env.MAILTRAP_USER,
-//     pass: process.env.MAILTRAP_PASS,
-//   },
-// })
-
-// export const sendEmail = async ({ to, subject, html }) =>
-//   transporter.sendMail({
-//     from: '"eCommerce Store" <noreply@ecommerce.com>',
-//     to,
-//     subject,
-//     html,
-//   })
-
 import nodemailer from 'nodemailer'
 import dotenv from 'dotenv'
 
@@ -36,53 +14,49 @@ const transporter = nodemailer.createTransport({
 
 export const sendApprovedEmail = async (order) => {
   try {
-    const {
-      email,
-      orderNumber,
-      name,
-      productId,
-      variantSelected,
-      quantity,
-      total,
-    } = order
+    const { email, orderNumber, name, total, cartItems } = order
     console.log('Preparing to send approved email for order:', order)
+    const itemsHtml = cartItems
+      .map((item) => {
+        return `
+          <tr>
+            <td>${item?.product?.title || 'Unknown Product'}</td>
+            <td>${item?.variantSelected}</td>
+            <td>${item?.quantity}</td>
+            <td>Rs. ${(item.quantity * item.price).toFixed(2)}</td>
+          </tr>
+        `
+      })
+      .join('')
     const mailOptions = {
       from: '"Shoe Store" <no-reply@ecommerce.com>',
       to: email,
       subject: `Order Confirmation - ${orderNumber}`,
-      // html: `<h3>Hi ${name},</h3>
-      //   <p>Your order <strong>${orderNumber}</strong> was approved successfully!</p>
-      //   <p>Product: ${productId}</p>
-      //   <p>Variant: ${variantSelected}</p>
-      //   <p>Quantity: ${quantity}</p>
-      //   <p>Total Paid: Rs.${total}</p>
-      //   <p>Thank you for shopping with us!</p>`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
+        <div style="font-family: Arial, sans-serif; max-width: 650px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
           <h2 style="color: #2E86C1;">✅ Thank you for your order, ${name}!</h2>
-          <p style="font-size: 16px;">We're happy to let you know that your order <strong>#${orderNumber}</strong> has been <strong>successfully confirmed</strong>.</p>
+          <p style="font-size: 16px;">Your order <strong>#${orderNumber}</strong> has been <strong>confirmed</strong>.</p>
 
           <hr style="margin: 20px 0;" />
 
           <h3 style="color: #555;">🛒 Order Summary</h3>
-          <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
-            <tr>
-              <td><strong>Variant:</strong></td>
-              <td>${variantSelected}</td>
-            </tr>
-            <tr>
-              <td><strong>Quantity:</strong></td>
-              <td>${quantity}</td>
-            </tr>
-            <tr>
-              <td><strong>Total Paid:</strong></td>
-              <td>Rs. ${total}</td>
-            </tr>
+          <table style="width: 100%; border-collapse: collapse; font-size: 15px; border: 1px solid #ccc;">
+            <thead>
+              <tr style="background-color: #f5f5f5;">
+                <th align="left" style="padding: 8px;">Product</th>
+                <th align="left" style="padding: 8px;">Variant</th>
+                <th align="left" style="padding: 8px;">Qty</th>
+                <th align="left" style="padding: 8px;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
           </table>
 
-          <hr style="margin: 20px 0;" />
+          <p style="font-size: 16px; margin-top: 20px;"><strong>Total Paid:</strong> Rs. ${total}</p>
 
-          <p style="font-size: 16px;">🧾 We’ll notify you once your order ships. For any queries, feel free to reply to this email.</p>
+          <p style="font-size: 16px;">🧾 We’ll notify you once your order ships.</p>
 
           <p style="font-size: 14px; color: #888;">Shoe Store<br/>no-reply@ecommerce.com</p>
         </div>
@@ -106,9 +80,6 @@ export const sendFailedEmail = async (order) => {
       from: '"Shoe Store" <no-reply@ecommerce.com>',
       to: email,
       subject: `Order Failed - ${orderNumber}`,
-      // html: `<h3>Hi ${name},</h3>
-      //   <p>Unfortunately, your order <strong>${orderNumber}</strong> could not be processed.</p>
-      //   <p>Please try again or contact support.</p>`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #f5c6cb; padding: 20px; border-radius: 10px; background-color: #f8d7da;">
           <h3>Hi ${name},</h3>
@@ -129,6 +100,6 @@ export const sendFailedEmail = async (order) => {
     await transporter.sendMail(mailOptions)
   } catch (error) {
     console.error('Error sending failed email:', error)
-    throw new Error('Failed to send failed email')
+    throw new Error('Failed to send email')
   }
 }

@@ -8,12 +8,12 @@ const config = {
     username: process.env.DB_USER,
     password: process.env.DB_PASS,
     dialect: 'postgres',
-    // dialectOptions: {
-    //   ssl: {
-    //     require: true,
-    //     rejectUnauthorized: false,
-    //   },
-    // },
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
   },
   server: {
     host: process.env.HOST || 'localhost',
