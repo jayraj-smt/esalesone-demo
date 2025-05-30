@@ -15,7 +15,6 @@ const transporter = nodemailer.createTransport({
 export const sendApprovedEmail = async (order) => {
   try {
     const { email, orderNumber, name, total, cartItems } = order
-    console.log('Preparing to send approved email for order:', order)
     const itemsHtml = cartItems
       .map((item) => {
         return `
@@ -63,8 +62,6 @@ export const sendApprovedEmail = async (order) => {
       `,
     }
 
-    console.log('Sending approved email to:', mailOptions)
-
     const sent = await transporter.sendMail(mailOptions)
     console.log('Approved email sent successfully:', sent)
   } catch (error) {
@@ -98,6 +95,7 @@ export const sendFailedEmail = async (order) => {
     }
 
     await transporter.sendMail(mailOptions)
+    console.log('Failed email sent successfully')
   } catch (error) {
     console.error('Error sending failed email:', error)
     throw new Error('Failed to send email')

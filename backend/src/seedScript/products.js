@@ -6,7 +6,6 @@ const productsMockData = [
     description:
       'High top canvas sneakers with improved cushioning and premium materials.',
     price: 75.0,
-    // imageUrl: 'https://via.placeholder.com/300x300.png?text=Converse+High',
     images: [
       {
         imageUrl:
@@ -24,7 +23,6 @@ const productsMockData = [
         variant: 'Grey',
       },
     ],
-    // variants: ['Black', 'Grey', 'Navy'],
     inventoryCount: 100,
   },
   {
@@ -49,7 +47,6 @@ const productsMockData = [
         variant: 'White',
       },
     ],
-    // variants: ['Black', 'Pink', 'White'],
     inventoryCount: 80,
   },
   {
@@ -69,7 +66,6 @@ const productsMockData = [
         variant: 'Blue',
       },
     ],
-    // variants: ['Black', 'Blue'],
     inventoryCount: 60,
   },
   {
@@ -89,7 +85,6 @@ const productsMockData = [
         variant: 'Checkered',
       },
     ],
-    // variants: ['Black', 'Checkered'],
     inventoryCount: 120,
   },
   {
@@ -108,29 +103,9 @@ const productsMockData = [
         variant: 'White',
       },
     ],
-    // variants: ['Multicolor', 'White'],
     inventoryCount: 90,
   },
 ]
-
-// export const addProducts = async () => {
-//   try {
-//     console.log('Seeding products...')
-
-//     await db.sequelize.sync()
-//     console.log('Database synchronized successfully')
-
-//     await db.Product.destroy({ where: {} })
-
-//     await db.Product.bulkCreate(productsMockData)
-
-//     console.log('Products seeded successfully')
-//   } catch (error) {
-//     console.error('Error seeding products:', error)
-//   } finally {
-//     await db.sequelize.close()
-//   }
-// }
 
 export const addProducts = async () => {
   try {

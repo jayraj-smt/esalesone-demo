@@ -29,8 +29,6 @@ export const createOrder = async (req, res) => {
       },
     } = req
 
-    console.log('Creating order with cart:', cart)
-
     if (
       !name ||
       !email ||
